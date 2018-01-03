@@ -1,0 +1,36 @@
+server:
+  port: 8090
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/test-security?characterEncoding=utf8
+    username: root
+    password: gaopeiliang
+
+jpa:
+  hibernate:
+    ddl-auto: update
+  show-sql: true
+
+
+jackson:
+  serialization: true
+
+
+securityconfig:
+  logoutsuccessurl: /tosignout
+  permitall: /rest/**, /re**
+  deniedpage: /deny
+  urlroles: /**/new/** = admin;
+            /**/edit/** = admin,editor;
+            /**/delete/** = admin
+
+#redis:
+#  pool:
+#    maxActive: 300
+#    maxIdle: 100
+#    maxWait: 1000
+#  host: 127.0.0.1
+#  port: 6379
+#  timeour: 2000
