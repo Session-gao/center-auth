@@ -1,3 +1,4 @@
+/*
 package com.cloudins.centerauth;
 
 
@@ -78,3 +79,4 @@ public class JpaConfiguration {
         return new TransactionTemplate(transactionManager());
     }
 }
+*/

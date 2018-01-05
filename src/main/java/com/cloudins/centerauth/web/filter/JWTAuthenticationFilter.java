@@ -1,12 +1,25 @@
 package com.cloudins.centerauth.web.filter;
 
 
+import com.cloudins.centerauth.entity.GrantedAuthorityImpl;
+import com.cloudins.centerauth.entity.Role;
 import com.cloudins.centerauth.entity.User;
+import com.cloudins.centerauth.exception.JwtSignatureException;
+import com.cloudins.centerauth.exception.JwtTokenExpiredException;
+import com.cloudins.centerauth.service.SecurityUser;
 import com.cloudins.centerauth.util.RedisUtil;
+import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.google.gson.Gson;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import jdk.nashorn.internal.parser.JSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -16,6 +29,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 
 /**
  * token的校验
@@ -25,8 +40,11 @@ import java.util.ArrayList;
  */
 public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
 
-    public JWTAuthenticationFilter(AuthenticationManager authenticationManager) {
+    private static Logger logger = LoggerFactory.getLogger(JWTAuthenticationFilter.class);
+    private RedisTemplate<String,String> redisTemplate;
+    public JWTAuthenticationFilter(AuthenticationManager authenticationManager,RedisTemplate redisTemplate) {
         super(authenticationManager);
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -49,20 +67,34 @@ public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
         String token = request.getHeader("Authorization");
         String userName = request.getHeader("user");
         if (token != null) {
-            String tokenValue = token.replace("Bearer ", "");
-            // parse the token.
-//          String userName =  RedisUtil.getJedis().get(tokenValue);
-            String password =   RedisUtil.getJedis().get(userName+"password");
-            String user = Jwts.parser()
-                    .setSigningKey(password)
+            ArrayList<GrantedAuthority> authoritie = null;
+            String user = null ;
+          try{
+              String tokenValue = token.replace("Bearer ", "");
+              String  password = redisTemplate.opsForValue().get(userName+"password");
+              user = Jwts.parser()
+                      .setSigningKey(password)
 //                    .parseClaimsJws(token.replace("Bearer ", ""))
-                    .parseClaimsJws(tokenValue)
-                    .getBody()
-                    .getSubject();
-
-
+                      .parseClaimsJws(tokenValue)
+                      .getBody()
+                      .getSubject();
+              //从tocken中获取用户的权限
+              Claims claims = Jwts.parser().setSigningKey(password).parseClaimsJws(tokenValue).getBody();
+              ArrayList<GrantedAuthority>  arrayList = (ArrayList <GrantedAuthority>) claims.get("role");
+              Object[] arrays = arrayList.toArray();
+              authoritie = new ArrayList <>();
+              for(int i=0;i<arrays.length;i++){
+                  LinkedHashMap<String,String> map  = (LinkedHashMap <String, String>) arrays[i];
+                  String role = map.get("authority");
+                  authoritie.add(new GrantedAuthorityImpl(role));
+              }
+          }catch (Exception e){
+              logger.info("解析Tocken出错！！！"+e.getMessage());
+//              e.printStackTrace();
+              return null;
+          }
             if (user != null) {
-                return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
+                return new UsernamePasswordAuthenticationToken(user, null,authoritie);
             }
             return null;
         }

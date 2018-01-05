@@ -2,12 +2,13 @@ package com.cloudins.centerauth.web.filter;
 
 
 import com.cloudins.centerauth.entity.User;
-import com.cloudins.centerauth.service.impl.UserDetailsServiceImpl;
 import com.cloudins.centerauth.util.CodeGeneratorUtil;
 import com.cloudins.centerauth.util.RedisUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,10 +34,13 @@ import java.util.List;
  */
 public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
 
+
+    private RedisTemplate<String,String> redisTemplate;
     private AuthenticationManager authenticationManager;
 
-    public JWTLoginFilter(AuthenticationManager authenticationManager) {
+    public JWTLoginFilter(AuthenticationManager authenticationManager,RedisTemplate redisTemplate) {
         this.authenticationManager = authenticationManager;
+        this.redisTemplate = redisTemplate;
     }
 
     // 接收并解析用户凭证
@@ -66,13 +70,15 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
                                             Authentication auth) throws IOException, ServletException {
         String password = CodeGeneratorUtil.generatorValue();
         String token = Jwts.builder()
-                .setSubject(auth.getName())
+                .setSubject(auth.getName()).claim("role",auth.getAuthorities())
                 .setExpiration(new Date(System.currentTimeMillis() + 60*60 * 1000))
                 .signWith(SignatureAlgorithm.HS512, password) //采用什么算法是可以自己选择的，不一定非要采用HS512
                 .compact();
-        String m = auth.getName()+"password";
-        RedisUtil.getJedis().set(auth.getName(),token);
-        RedisUtil.getJedis().set(auth.getName()+"password",password);
+
+//        RedisUtil.getJedis().set(auth.getName(),token);
+//        RedisUtil.getJedis().set(auth.getName()+"password",password);
+        redisTemplate.opsForValue().set(auth.getName(),token);
+        redisTemplate.opsForValue().set(auth.getName()+"password",password);
         res.addHeader("Authorization", "Bearer " + token);
     }
 //    private void generateToken(HttpServletRequest req,

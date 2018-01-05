@@ -8,6 +8,13 @@ spring:
     username: root
     password: gaopeiliang
 
+#  redis:
+#    database: 1
+#    host: 127.0.0.1
+#    pool:
+#      max-active: 20
+
+
 jpa:
   hibernate:
     ddl-auto: update

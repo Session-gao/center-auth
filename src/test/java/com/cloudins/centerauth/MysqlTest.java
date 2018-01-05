@@ -1,3 +1,4 @@
+/*
 package com.cloudins.centerauth;
 
 
@@ -71,3 +72,4 @@ public class MysqlTest {
         System.out.println(users.getId());
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.cloudins.centerauth.security;
 
 //import boss.portal.config.SecuritySettings;
@@ -31,10 +32,12 @@ import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
+*/
 /**
  * SpringSecurity的配置
  * 通过SpringSecurity的配置，将JWTLoginFilter，JWTAuthenticationFilter组合在一起
- */
+ *//*
+
 //@Configuration
 //@Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 @Configuration
@@ -112,3 +115,4 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    }
 
 }
+*/
